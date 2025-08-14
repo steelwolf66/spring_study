@@ -1,10 +1,13 @@
 package com.zhouyu.study.common.entity;
 
 
+import java.util.HashMap;
+
 public class CommonEntity {
     private int id;
     private String name;
 
+    private HashMap map;
     public int getId() {
         return id;
     }
