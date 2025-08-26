@@ -1,30 +1,36 @@
 package com.zhouyu.thread;
 
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ExerciseTransfer {
     public static void main(String[] args) throws InterruptedException {
-        Account a = new Account(1000);
-        Account b = new Account(1000);
-        ReentrantLock lock = new ReentrantLock();
+        Account a = new Account(1000, 1);
+        Account b = new Account(1000, 2);
         Thread t1 = new Thread(() -> {
             for (int i = 0; i < 1000; i++) {
-                lock.lock();
+                try {
+                    TimeUnit.NANOSECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    System.out.println(e.getMessage());
+                }
                 a.transfer(b, randomAmount());
-                lock.unlock();
             }
-        },
-                "t1");
+        }, "t1");
+
         Thread t2 = new Thread(() -> {
             for (int i = 0; i < 1000; i++) {
-                lock.lock();
+                try {
+                    TimeUnit.NANOSECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    System.out.println(e.getMessage());
+                }
                 b.transfer(a, randomAmount());
-                lock.unlock();
             }
 
-        },
-                "t2");
+        }, "t2");
+
         t1.start();
         t2.start();
         t1.join();
@@ -38,17 +44,19 @@ public class ExerciseTransfer {
 
     // 随机 1~100
     public static int randomAmount() {
-        int amount = random.nextInt(100) + 1;
-//        System.out.println("amount:" + amount);
-        return amount;
+        return random.nextInt(100) + 1;
     }
 }
 
 class Account {
-    private volatile int money;
+    private int money;
+    private final ReentrantLock lock = new ReentrantLock();
 
-    public Account(int money) {
+    private final int id;
+
+    public Account(int money, int id) {
         this.money = money;
+        this.id = id;
     }
 
     public int getMoney() {
@@ -60,10 +68,21 @@ class Account {
     }
 
     public void transfer(Account target, int amount) {
-
-        if (this.money > amount) {
-            this.setMoney(this.getMoney() - amount);
-            target.setMoney(target.getMoney() + amount);
+        if (target == null || this == target) {
+            return;
+        }
+        ReentrantLock firstLock = this.id > target.id ? this.lock : target.lock;
+        ReentrantLock secondLock = this.id > target.id ? target.lock : this.lock;
+        firstLock.lock();
+        secondLock.lock();
+        try {
+            if (this.money > amount) {
+                this.setMoney(this.getMoney() - amount);
+                target.setMoney(target.getMoney() + amount);
+            }
+        } finally {
+            secondLock.unlock();
+            firstLock.unlock();
         }
     }
 }
