@@ -11,7 +11,8 @@ public class InterceptorMain {
         OrderService orderService = new OrderServiceImpl();
         JdkInterceptor jdkInterceptor = new JdkInterceptor(orderService);
         OrderService proxyInstance = (OrderService) Proxy.newProxyInstance(OrderService.class.getClassLoader(), new Class[]{OrderService.class}, jdkInterceptor);
-        proxyInstance.create("1");
+        String result = proxyInstance.create("1");
+        System.out.println("result:" + result);
 
     }
 }
